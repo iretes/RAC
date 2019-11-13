@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.utils.multiclass import unique_labels
-
+from scipy.stats import rankdata
 
 
 class BiRacClassifier(BaseEstimator, ClassifierMixin):
@@ -28,11 +28,13 @@ class BiRacClassifier(BaseEstimator, ClassifierMixin):
         The signatures for each class, computed during :meth:`fit`.
     """
     
-    def __init__(self, weighted=True):
+    def __init__(self, weighted=False):
         self.weighted = weighted
 
     def fit(self, X, y):
-        """Computes class signatures uring rank aggregation. The features are ranked for each training sample and the Borda count algorithm is applied to all seamples from each class.
+        """Computes class signatures uring rank aggregation. 
+        The features are ranked for each training sample and the Borda count algorithm
+	is applied to all seamples from each class.
 
         Parameters
         ----------
@@ -55,13 +57,17 @@ class BiRacClassifier(BaseEstimator, ClassifierMixin):
         self.y_ = y
 
 	#compute signature for each class
-	
+        self.class_signatures_=np.empty((len(self.classes_),X.shape[1]))
+        for i in range(len(self.classes_)):
+            self.class_signatures_[i]=self.aggregate(self.X_[self.y_==self.classes_[i]])
 	
         # Return the classifier
         return self
 
     def predict(self, X):
-        """ Predicts the class for each input sample. The prediction is based on the distance between the sample and the class signatures. The distance is computed using Spearman's distance between rankings, weighted by the rank if the weighted parameter is set.
+        """ Predicts the class for each input sample. 
+	The prediction is based on the distance between the sample and the class signatures. 
+	The distance is computed using Spearman's distance between rankings, weighted by the rank if the weighted parameter is set.
 
         Parameters
         ----------
@@ -80,5 +86,53 @@ class BiRacClassifier(BaseEstimator, ClassifierMixin):
         # Input validation
         X = check_array(X)
 
-        closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
-        return self.y_[closest]
+        closest = np.argmin(self. distances_to_signatures(X), axis=1)
+        return self.classes_[closest]
+    
+    def distances_to_signatures(self,X):
+        """Computes the matrix of pairwise Spearman distances between the ranking of features in the two sample sets.
+        
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Input samples to compare to signatures.
+
+        Returns
+        -------
+        d : array-like, shape (n_samples, n_classes)
+            The distance matrix between all samples from X to all class signatures.
+        """
+        if 0 in X.shape:
+           return np.empty(0)
+        d=np.sum(np.abs(self.class_signatures_-rankdata(X[0], method='min')),axis=1)
+        for x in X[1:]:
+            d=np.vstack((d,np.sum(np.abs(self.class_signatures_-rankdata(x, method='min')),axis=1)))
+        return d
+            
+        
+    def aggregate(self, X):
+        """Ranks features and aggregates them into one signature.
+        
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            The input samples from one class only.
+
+        Returns
+        -------
+        s : ndarray, shape (n_features,)
+            The signature determined by the input samples. 
+            Smallest rank corresponds to smallest feature value.
+        """
+        s=np.zeros(X.shape[1])
+        for sample in X:
+            s=s+rankdata(sample, method='min')
+        return rankdata(s,method='min')
+    
+    def get_params(self, deep=True):
+        return {"weight": self.weight}
+    
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self

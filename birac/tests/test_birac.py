@@ -16,7 +16,7 @@ def data():
 def test_template_classifier(data):
     X, y = data
     clf = BiRacClassifier()
-    assert clf.demo_param == 'demo'
+    assert clf.weighted == False
 
     clf.fit(X, y)
     assert hasattr(clf, 'classes_')
