@@ -104,7 +104,10 @@ class BiRacClassifier(BaseEstimator, ClassifierMixin):
         """
         if 0 in X.shape:
            return np.empty(0)
-        d=np.sum(np.abs(self.class_signatures_-rankdata(X[0], method='min')),axis=1)
+        weights=1
+        if self.weighted:
+            weights=np.abs(X.shape[1]-1-2*(self.class_signatures_-1))
+        d=np.sum(np.abs(self.class_signatures_-rankdata(X[0], method='min'))*weights,axis=1)
         for x in X[1:]:
             d=np.vstack((d,np.sum(np.abs(self.class_signatures_-rankdata(x, method='min')),axis=1)))
         return d
@@ -130,7 +133,7 @@ class BiRacClassifier(BaseEstimator, ClassifierMixin):
         return rankdata(s,method='min')
     
     def get_params(self, deep=True):
-        return {"weight": self.weight}
+        return {"weighted": self.weighted}
     
     def set_params(self, **parameters):
         for parameter, value in parameters.items():
