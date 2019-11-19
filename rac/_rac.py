@@ -1,5 +1,5 @@
 """
-Implementation of the BiRAC classifier
+Implementation of the RAC classifier
 """
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -8,8 +8,8 @@ from sklearn.utils.multiclass import unique_labels
 from scipy.stats import rankdata
 
 
-class BiRacClassifier(BaseEstimator, ClassifierMixin):
-    """ BiRAC Classifier class.
+class RacClassifier(BaseEstimator, ClassifierMixin):
+    """ RAC Classifier class.
 
     Parameters
     ----------

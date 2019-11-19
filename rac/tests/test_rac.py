@@ -5,7 +5,7 @@ from sklearn.datasets import load_iris
 from sklearn.utils.testing import assert_array_equal
 from sklearn.utils.testing import assert_allclose
 
-from birac import BiRacClassifier
+from rac import RacClassifier
 
 
 @pytest.fixture
@@ -15,7 +15,7 @@ def data():
 
 def test_template_classifier(data):
     X, y = data
-    clf = BiRacClassifier()
+    clf = RacClassifier()
     assert clf.weighted == False
 
     clf.fit(X, y)

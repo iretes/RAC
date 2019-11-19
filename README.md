@@ -1,4 +1,4 @@
-# Binary Rank Aggregation Classifier
+#  Rank Aggregation Classifier
 
 A classifier that uses rank aggregation to classify objects.
 
