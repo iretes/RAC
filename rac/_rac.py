@@ -109,7 +109,7 @@ class RacClassifier(BaseEstimator, ClassifierMixin):
             weights=np.abs(X.shape[1]-1-2*(self.class_signatures_-1))
         d=np.empty((X.shape[0],len(self.classes_)))
         for i in range(X.shape[0]):
-            d[i]=np.sum(np.abs(self.class_signatures_-rankdata(X[i], method='min')),axis=1)
+            d[i]=np.sum(np.abs(self.class_signatures_-rankdata(X[i], method='min'))*weights,axis=1)
         return d
             
         
