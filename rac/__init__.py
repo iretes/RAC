@@ -1,5 +1,5 @@
-from ._rac import RacClassifier
+from ._rac import RAClassifier
 
 from ._version import __version__
 
-__all__ = ['RacClassifier','__version__']
+__all__ = ['RAClassifier','__version__']

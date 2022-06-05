@@ -2,11 +2,11 @@ import pytest
 
 from sklearn.utils.estimator_checks import check_estimator
 
-from rac import RacClassifier
+from rac import RAClassifier
 
 
 @pytest.mark.parametrize(
-    "Estimator", [RacClassifier]
+    "Estimator", [RAClassifier()]
 )
 def test_all_estimators(Estimator):
     return check_estimator(Estimator)

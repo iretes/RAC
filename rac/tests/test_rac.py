@@ -2,10 +2,8 @@ import pytest
 import numpy as np
 
 from sklearn.datasets import load_iris
-from sklearn.utils.testing import assert_array_equal
-from sklearn.utils.testing import assert_allclose
 
-from rac import RacClassifier
+from rac import RAClassifier
 
 
 @pytest.fixture
@@ -15,7 +13,7 @@ def data():
 
 def test_template_classifier(data):
     X, y = data
-    clf = RacClassifier()
+    clf = RAClassifier()
     assert clf.weighted == False
 
     clf.fit(X, y)
