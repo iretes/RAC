@@ -19,15 +19,15 @@ class RAClassifier(BaseEstimator, ClassifierMixin):
         Parameter that specifies the method used to aggregate the rankings.
     metric : {'spearman', 'kendall'}, default='spearman'
         Parameter that specifies the metric used to compute the distance to the signatures.
-    weighted : Boolean or int, default=False
+    weighted : Boolean or list, default=False
         Parameter that specifies whether the distance to the signatures is weighted by the rank or not.
         Ignored if the parameter metric is 'kendall'.
         If True weights depends on to the rank: the weights for the candidates at top and bottom of the ranking
         are higher and decrease towards the center of the ranking.
-        If tuple it must have 2 int values (n1, n2). In that case only the n1 features at the top and 
+        If it is a list it must have 2 int values [n1, n2]. In that case only the n1 features at the top and 
         n2 features at the bottom of the ranking will be taken into account.
     p : float
-        Parameter that specifies the exponent to use in the weighting function when weighted is True and metric is 'kendall'.
+        Parameter that specifies the exponent to use in the weighting function when weighted is True and metric is 'spearman'.
 
     Attributes
     ----------
@@ -103,17 +103,23 @@ class RAClassifier(BaseEstimator, ClassifierMixin):
         if self.metric in ['kendall']:
             self.weighted = False
         else:
-            if isinstance(self.weighted, tuple):
-                if (not isinstance(self.weighted[0], int) or not isinstance(self.weighted[1], int)):
+            if isinstance(self.weighted, list):
+                if (isinstance(self.weighted[0], float) and isinstance(self.weighted[1], float)):
+                    self.n_features_top = self.weighted[0]*X.shape[1]
+                    self.n_features_bottom = self.weighted[1]*X.shape[1]
+                elif (isinstance(self.weighted[0], int) and isinstance(self.weighted[1], int)):
+                    self.n_features_top = self.weighted[0]
+                    self.n_features_bottom = self.weighted[1]
+                else:
                     raise TypeError("Invalid weighted (values must be int).")
-                if (self.weighted[0] < 0 or self.weighted[1] < 0):
+                if (self.n_features_top < 0 or self.n_features_bottom < 0):
                     raise ValueError("Invalid weighted (values must be >= 0).")
-                if (self.weighted[0]+self.weighted[1] >= self.n_features_in_):
+                if (self.n_features_top + self.n_features_bottom >= self.n_features_in_):
                     raise ValueError("Invalid weighted (the sum of the values must be less than the number of features).")
-                if (self.weighted[0]+self.weighted[1] == 0):
+                if (self.n_features_top + self.n_features_bottom == 0):
                     raise ValueError("Invalid weighted (cannot set all weights to 0).")
             elif not isinstance(self.weighted, bool):
-                raise TypeError("Invalid weighted (must be bool or tuple).")
+                raise TypeError("Invalid weighted (must be bool or list).")
 
         # Compute signature, centroid and weights for each class
         self.class_signatures_ = np.empty((len(self.classes_), self.n_features_in_))
@@ -124,6 +130,13 @@ class RAClassifier(BaseEstimator, ClassifierMixin):
             self.class_centroids_[i]= self.compute_centroid(self.X_[self.y_ == self.classes_[i]])
             if self.weighted: 
                 self.weights_[i] = self.compute_weights(self.class_signatures_[i])
+
+        # Assign feature importance
+        self.feature_importances_ = np.zeros(self.n_features_in_)
+        class_idxs = range(len(self.classes_))
+        class_pairs = [(c1, c2) for c1 in class_idxs for c2 in class_idxs if c2 > c1]
+        for c1, c2 in class_pairs:
+            self.feature_importances_ += np.abs(self.class_signatures_[c1] - self.class_signatures_[c2])
 
         # Return the classifier
         return self
@@ -291,9 +304,9 @@ class RAClassifier(BaseEstimator, ClassifierMixin):
             computed according to the weighting mode required.
         """
         max_rank = np.max(signature)
-        if isinstance(self.weighted, tuple):
-            return ((signature <= self.weighted[0]) | \
-                    (signature > max_rank-self.weighted[1])).astype(int)
+        if isinstance(self.weighted, list):
+            return ((signature <= self.n_features_top) | \
+                    (signature > max_rank-self.n_features_bottom)).astype(int)
         else:
             return np.power(np.abs(max_rank+1-2*signature), self.p)
 
